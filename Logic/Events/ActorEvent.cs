@@ -1,6 +1,6 @@
 namespace Logic.Events
 {
-    public class Actor
+    public class ActorEvent
     {
         public int Id { get; set; }
         public string Name { get; set; }

@@ -5,11 +5,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using AutoMapper;
 using Logic.Business.Service;
 using Logic.Business.Service.Interfaces;
-using Logic.Events;
-using Logic.Mappings;
 
 namespace Consumer
 {
@@ -31,7 +28,6 @@ namespace Consumer
             services.AddSingleton<IHostedService, KafkaConsumerHandler>();
             services.AddElasticsearch(Configuration);
             services.AddScoped<IElasticService, ElasticService>();
-            services.AddAutoMapper(typeof(MovieMapping).GetType().Assembly);
         }
 
         public void Configure(IApplicationBuilder app)
