@@ -3,10 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using Logic.Business.Service.Interfaces;
-using Logic.Events;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 
 namespace Logic.Business.Service.Kafka.Handlers
 {
@@ -44,7 +42,7 @@ namespace Logic.Business.Service.Kafka.Handlers
                     }
                     catch (Exception exception)
                     {
-                        //builder.Close();
+                        builder.Close();
                     }
                 }
             }
