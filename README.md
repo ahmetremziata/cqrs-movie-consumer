@@ -1,4 +1,4 @@
-# cqrs-movie-project
+# cqrs-movie-consumer
 A consumer example for cqrs and event sourcing
 
 ## Dependencies
