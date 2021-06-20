@@ -50,7 +50,20 @@ namespace Logic.Business.Service
             
             _elasticClient.IndexDocument(movie);
         }
-        
+
+        public void DeleteMovie(string payload)
+        {
+            MovieDeactivatedEvent movieDeactivatedEvent = JsonConvert.DeserializeObject<MovieDeactivatedEvent>(payload);
+            _elasticClient.DeleteByQuery<Movie>(q => q
+                .Query(rq => rq
+                    .Match(m => m
+                        .Field(f => f.MovieId)
+                        .Query(movieDeactivatedEvent.MovieId.ToString()))
+                )
+                .Index("movies")
+            );
+        }
+
         private List<Actor> GetActors(List<ActorEvent> actorEvents)
         {
             List<Actor> actors = new List<Actor>();

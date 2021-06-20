@@ -25,7 +25,7 @@ namespace Consumer
             { 
                 o.EnableEndpointRouting = false;
             });
-            services.AddSingleton<IHostedService, KafkaConsumerHandler>();
+            services.AddScoped<IHostedService, MovieConsumerHandler>();
             services.AddElasticsearch(Configuration);
             services.AddScoped<IElasticService, ElasticService>();
         }

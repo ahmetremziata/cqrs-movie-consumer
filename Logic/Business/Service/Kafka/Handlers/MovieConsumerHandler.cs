@@ -8,18 +8,36 @@ using Microsoft.Extensions.Hosting;
 
 namespace Logic.Business.Service.Kafka.Handlers
 {
-    public class KafkaConsumerHandler : IHostedService
+    public class MovieConsumerHandler : IHostedService
     {
         private readonly IConfiguration _configuration;
         private readonly IElasticService _elasticService;
         
-        public KafkaConsumerHandler(IConfiguration configuration, IElasticService elasticService)
+        public MovieConsumerHandler(IConfiguration configuration, IElasticService elasticService)
         {
             _configuration = configuration;
             _elasticService = elasticService;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
+        {
+            Thread activatedThread = new Thread(StartActivatedConsumer)
+            {
+                Name = "ActivatedThread"
+            };
+            
+            Thread deactivatedThread = new Thread(StartDeactivatedConsumer)
+            {
+                Name = "DeactivatedThread"
+            };
+            
+            activatedThread.Start();  
+            deactivatedThread.Start();
+            
+            return Task.CompletedTask;
+        }
+
+        private void StartActivatedConsumer()
         {
             var conf = new ConsumerConfig
             {
@@ -46,8 +64,35 @@ namespace Logic.Business.Service.Kafka.Handlers
                     }
                 }
             }
+        }
+
+        private void StartDeactivatedConsumer()
+        {
+            var conf = new ConsumerConfig
+            {
+                GroupId = _configuration["MovieDeactivatedGroupName"],
+                BootstrapServers = _configuration["KafkaBootstrapServers"],
+                AutoOffsetReset = AutoOffsetReset.Earliest
+            };
             
-            return Task.CompletedTask;
+            using (var builder = new ConsumerBuilder<Ignore, 
+                string>(conf).Build())
+            {
+                builder.Subscribe(_configuration["MovieDeactivatedTopicName"]);
+                var cancelToken = new CancellationTokenSource();
+                while (true)
+                {
+                    var consumer = builder.Consume(cancelToken.Token);
+                    try
+                    {
+                        _elasticService.DeleteMovie(consumer.Message.Value);
+                    }
+                    catch (Exception exception)
+                    {
+                        builder.Close();
+                    }
+                }
+            }
         }
         
         public Task StopAsync(CancellationToken cancellationToken)
