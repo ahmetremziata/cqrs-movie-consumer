@@ -24,3 +24,11 @@ GET /movies/_search
 
 ```
 
+## ElasticSearch
+To get data from elastic search first you run elastic on local. These link show you how you can run elastic on locak
+https://opensource.com/article/19/7/installing-elasticsearch-macos
+Note: You can also load kibana on your local to operate elastic processes
+For details; https://codingexplained.com/dev-ops/mac/installing-kibana-for-elasticsearch-on-os-x
+
+After you bind elasticsearch and kafka, you run application and test it.
+
