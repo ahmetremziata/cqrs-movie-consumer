@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Logic.Business.Service.Interfaces;
 using Logic.Events;
 using Logic.Indexes;
@@ -19,6 +21,42 @@ namespace Logic.Business.Service
         {
             MovieActivatedEvent movieActivatedEvent = JsonConvert.DeserializeObject<MovieActivatedEvent>(payload);
 
+            var movie = GetMovie(movieActivatedEvent);
+
+            _elasticClient.IndexDocument(movie);
+        }
+        
+        public void DeleteMovie(string payload)
+        {
+            MovieDeactivatedEvent movieDeactivatedEvent = JsonConvert.DeserializeObject<MovieDeactivatedEvent>(payload);
+            _elasticClient.DeleteByQuery<Movie>(q => q
+                .Query(rq => rq
+                    .Match(m => m
+                        .Field(f => f.MovieId)
+                        .Query(movieDeactivatedEvent.MovieId.ToString()))
+                )
+                .Index("movies")
+            );
+        }
+
+        public void UpdateMovie(string movieUpdatedEvent)
+        {
+            MovieActivatedEvent movieActivatedEvent = JsonConvert.DeserializeObject<MovieActivatedEvent>(movieUpdatedEvent);
+
+            var searchResponse =  _elasticClient
+                .Search<Indexes.Movie>(s => s.Query(q =>
+                    q.Raw(GetMovieByIdQueryUrl(movieActivatedEvent.MovieId))));
+
+            if (!searchResponse.Documents.Any())
+            {
+                return;
+            }
+            
+            _elasticClient.IndexDocument(GetMovie(movieActivatedEvent));
+        }
+        
+        private Movie GetMovie(MovieActivatedEvent movieActivatedEvent)
+        {
             Movie movie = new Movie
             {
                 Description = movieActivatedEvent.Description,
@@ -31,7 +69,7 @@ namespace Logic.Business.Service
             };
 
             var identityEvent = movieActivatedEvent.Identity;
-            Logic.Indexes.MovieIdentity movieIdentity = new Logic.Indexes.MovieIdentity
+            Indexes.MovieIdentity movieIdentity = new Indexes.MovieIdentity
             {
                 VisionEntryDate = identityEvent.VisionEntryDate,
                 BookAuthors = GetActors(identityEvent.BookAuthors),
@@ -45,23 +83,9 @@ namespace Logic.Business.Service
             };
 
             movie.Identity = movieIdentity;
-            
-            movie.Actors = GetActors(movieActivatedEvent.Actors);
-            
-            _elasticClient.IndexDocument(movie);
-        }
 
-        public void DeleteMovie(string payload)
-        {
-            MovieDeactivatedEvent movieDeactivatedEvent = JsonConvert.DeserializeObject<MovieDeactivatedEvent>(payload);
-            _elasticClient.DeleteByQuery<Movie>(q => q
-                .Query(rq => rq
-                    .Match(m => m
-                        .Field(f => f.MovieId)
-                        .Query(movieDeactivatedEvent.MovieId.ToString()))
-                )
-                .Index("movies")
-            );
+            movie.Actors = GetActors(movieActivatedEvent.Actors);
+            return movie;
         }
 
         private List<Actor> GetActors(List<ActorEvent> actorEvents)
@@ -127,6 +151,15 @@ namespace Logic.Business.Service
                 Id = countryEvent.Id,
                 Name = countryEvent.Name
             };
+        }
+        
+        private string GetMovieByIdQueryUrl(int movieId)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(@"{""bool"": {""should"": [");
+            stringBuilder.Append(@"{""match"": {""movieId"":" + movieId + @"}}");
+            stringBuilder.Append(@"]}}");
+            return stringBuilder.ToString();
         }
     }
 }

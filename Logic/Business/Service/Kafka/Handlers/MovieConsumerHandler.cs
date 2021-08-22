@@ -31,8 +31,14 @@ namespace Logic.Business.Service.Kafka.Handlers
                 Name = "DeactivatedThread"
             };
             
+            Thread movieUpdatedThread = new Thread(StartMovieUpdatedConsumer)
+            {
+                Name = "MovieUpdatedThread"
+            };
+            
             activatedThread.Start();  
             deactivatedThread.Start();
+            movieUpdatedThread.Start();
             
             return Task.CompletedTask;
         }
@@ -86,6 +92,35 @@ namespace Logic.Business.Service.Kafka.Handlers
                     try
                     {
                         _elasticService.DeleteMovie(consumer.Message.Value);
+                    }
+                    catch (Exception exception)
+                    {
+                        builder.Close();
+                    }
+                }
+            }
+        }
+        
+        private void StartMovieUpdatedConsumer()
+        {
+            var conf = new ConsumerConfig
+            {
+                GroupId = _configuration["MovieUpdatedGroupName"],
+                BootstrapServers = _configuration["KafkaBootstrapServers"],
+                AutoOffsetReset = AutoOffsetReset.Earliest
+            };
+            
+            using (var builder = new ConsumerBuilder<Ignore, 
+                string>(conf).Build())
+            {
+                builder.Subscribe(_configuration["MovieUpdatedTopicName"]);
+                var cancelToken = new CancellationTokenSource();
+                while (true)
+                {
+                    var consumer = builder.Consume(cancelToken.Token);
+                    try
+                    {
+                        _elasticService.InsertMovie(consumer.Message.Value);
                     }
                     catch (Exception exception)
                     {

@@ -4,5 +4,6 @@ namespace Logic.Business.Service.Interfaces
     {
         void InsertMovie(string movieActivatedEvent);
         void DeleteMovie(string movieDeactivatedEvent);
+        void UpdateMovie(string movieUpdatedEvent);
     }
 }
