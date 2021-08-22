@@ -120,7 +120,7 @@ namespace Logic.Business.Service.Kafka.Handlers
                     var consumer = builder.Consume(cancelToken.Token);
                     try
                     {
-                        _elasticService.InsertMovie(consumer.Message.Value);
+                        _elasticService.UpdateMovie(consumer.Message.Value);
                     }
                     catch (Exception exception)
                     {

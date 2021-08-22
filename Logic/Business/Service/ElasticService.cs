@@ -47,12 +47,20 @@ namespace Logic.Business.Service
                 .Search<Indexes.Movie>(s => s.Query(q =>
                     q.Raw(GetMovieByIdQueryUrl(movieActivatedEvent.MovieId))));
 
-            if (!searchResponse.Documents.Any())
+            if (!searchResponse.Hits.Any())
             {
                 return;
             }
+
+            string id = searchResponse.Hits.ToList()[0].Id;
+            var updatedMovie = GetMovie(movieActivatedEvent);
             
-            _elasticClient.IndexDocument(GetMovie(movieActivatedEvent));
+            _elasticClient.Update(DocumentPath<Movie>
+                    .Id(id),
+                u => u
+                    .Index("movies")
+                    .DocAsUpsert(true)
+                    .Doc(updatedMovie));
         }
         
         private Movie GetMovie(MovieActivatedEvent movieActivatedEvent)
